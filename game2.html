@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -392,6 +392,149 @@ html,body{height:100%;overflow:hidden;background:#000}
 
 <script>
 // ═══════════════════════════════════════════════════════════════════
+// AUDIO SYSTEM - Keyboard Typing Sounds
+// ═══════════════════════════════════════════════════════════════════
+const AudioSystem = (function() {
+  let audioCtx = null;
+  let isInitialized = false;
+  
+  function init() {
+    if (isInitialized) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      isInitialized = true;
+    } catch (e) {
+      console.warn('Web Audio API not supported');
+    }
+  }
+  
+  function playKeyClick() {
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    
+    const now = audioCtx.currentTime;
+    
+    // Noise buffer per il click
+    const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.03, audioCtx.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseData.length; i++) {
+      noiseData[i] = (Math.random() * 2 - 1) * 0.3;
+    }
+    
+    const noiseSource = audioCtx.createBufferSource();
+    noiseSource.buffer = noiseBuffer;
+    
+    // Filtro per carattere del click
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 2000 + Math.random() * 1500;
+    filter.Q.value = 1.5;
+    
+    // Gain envelope - volume bilanciato
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0.18 + Math.random() * 0.07, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+    
+    noiseSource.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    noiseSource.start(now);
+    noiseSource.stop(now + 0.04);
+    
+    // Tono meccanico sottile
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150 + Math.random() * 100, now);
+    osc.frequency.exponentialRampToValueAtTime(50, now + 0.02);
+    
+    const oscGain = audioCtx.createGain();
+    oscGain.gain.setValueAtTime(0.07, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+    
+    osc.connect(oscGain);
+    oscGain.connect(audioCtx.destination);
+    
+    osc.start(now);
+    osc.stop(now + 0.03);
+  }
+  
+  function playSpaceSound() {
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    
+    const now = audioCtx.currentTime;
+    
+    // Suono più lungo e profondo per lo spazio
+    const noiseBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.05, audioCtx.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseData.length; i++) {
+      noiseData[i] = (Math.random() * 2 - 1) * 0.25;
+    }
+    
+    const noiseSource = audioCtx.createBufferSource();
+    noiseSource.buffer = noiseBuffer;
+    
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 1200;
+    filter.Q.value = 0.8;
+    
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0.14, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+    
+    noiseSource.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    noiseSource.start(now);
+    noiseSource.stop(now + 0.06);
+    
+    // Thock più profondo
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(100, now);
+    osc.frequency.exponentialRampToValueAtTime(40, now + 0.04);
+    
+    const oscGain = audioCtx.createGain();
+    oscGain.gain.setValueAtTime(0.09, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    
+    osc.connect(oscGain);
+    oscGain.connect(audioCtx.destination);
+    
+    osc.start(now);
+    osc.stop(now + 0.05);
+  }
+  
+  function playTypeSound(char) {
+    if (char === ' ') {
+      playSpaceSound();
+    } else if (char.match(/[a-zA-Z0-9àèéìòùáéíóú]/)) {
+      playKeyClick();
+    } else if (char.match(/[.,!?;:'"()\-…—]/)) {
+      playKeyClick();
+    }
+  }
+  
+  return {
+    init,
+    playKeyClick,
+    playSpaceSound,
+    playTypeSound
+  };
+})();
+
+// Initialize audio on first interaction
+document.addEventListener('click', () => AudioSystem.init(), { once: true });
+document.addEventListener('keydown', () => AudioSystem.init(), { once: true });
+
+// ═══════════════════════════════════════════════════════════════════
 // INTRO — Conversazione tra il ragazzo e la voce
 // ═══════════════════════════════════════════════════════════════════
 (function(){
@@ -408,9 +551,11 @@ html,body{height:100%;overflow:hidden;background:#000}
       wrap.style.lineHeight = '1.7';
 
       if(who === 'lui'){
+        // Il ragazzo (player) - NESSUN suono
         wrap.style.color = '#c8c0a0';
         wrap.style.paddingLeft = '0';
       } else if(who === 'voce'){
+        // La voce misteriosa - CON suono di tastiera
         wrap.style.color = '#7a9a7a';
         wrap.style.paddingLeft = '20px';
         wrap.style.fontStyle = 'italic';
@@ -433,6 +578,12 @@ html,body{height:100%;overflow:hidden;background:#000}
       for(const c of text){
         wrap.innerHTML += c;
         out.scrollTop = out.scrollHeight;
+        
+        // Suono SOLO per la voce, NON per il ragazzo
+        if(who === 'voce'){
+          AudioSystem.playTypeSound(c);
+        }
+        
         let d = 28 + Math.random() * 18;
         if('.?!,…—'.includes(c)) d += 120;
         if(c === ' ') d = 10;
@@ -445,7 +596,7 @@ html,body{height:100%;overflow:hidden;background:#000}
   async function intro(){
     await wait(1200);
 
-    // Il ragazzo si sveglia, non capisce
+    // Il ragazzo si sveglia, non capisce (NESSUN suono)
     await say('...che cos\'è questo posto?', 'lui');
     await wait(800);
     await say('Non mi ricordo di essere entrato da nessuna parte.', 'lui');
@@ -459,7 +610,7 @@ html,body{height:100%;overflow:hidden;background:#000}
     await say('E queste luci... ronzano. Non smettono.', 'lui');
     await wait(1400);
 
-    // La voce si fa sentire
+    // La voce si fa sentire (CON suono di tastiera)
     await say('Ti sei svegliato.', 'voce');
     await wait(1000);
 
@@ -620,9 +771,9 @@ const VIEW_DIST = 7;
 // Tile types
 const WALL = 0;
 const FLOOR = 1;
-const DOOR = 2;      // Porte normali tra stanze
-const EXIT = 3;      // Uscita finale
-const DOOR_OPEN = 4; // Porta aperta
+const DOOR = 2;
+const EXIT = 3;
+const DOOR_OPEN = 4;
 
 // Base Colors (livello 0)
 const BASE_COL = {
@@ -644,14 +795,11 @@ const BASE_COL = {
   fog: '#1a1810'
 };
 
-// Colors (dinamici in base al livello)
 const COL = { ...BASE_COL };
 
-// Funzione per calcolare il degrado horror in base al livello
 function updateHorrorLevel() {
-  const horrorFactor = Math.min(1, level / 8); // 0 a 1, massimo al livello 8
+  const horrorFactor = Math.min(1, level / 8);
   
-  // Interpolazione tra colori normali e horror
   const mix = (baseColor, horrorColor, factor) => {
     const base = parseInt(baseColor.slice(1), 16);
     const horror = parseInt(horrorColor.slice(1), 16);
@@ -671,7 +819,6 @@ function updateHorrorLevel() {
     return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
   };
   
-  // Colori horror (rossi e neri)
   const horrorColors = {
     floor: '#3a1010',
     floorDark: '#2a0a0a',
@@ -691,7 +838,6 @@ function updateHorrorLevel() {
     fog: '#0a0505'
   };
   
-  // Applicare mixing
   COL.floor = mix(BASE_COL.floor, horrorColors.floor, horrorFactor);
   COL.floorDark = mix(BASE_COL.floorDark, horrorColors.floorDark, horrorFactor);
   COL.floorPattern = mix(BASE_COL.floorPattern, horrorColors.floorPattern, horrorFactor);
@@ -707,7 +853,6 @@ function updateHorrorLevel() {
   COL.exitLight = mix(BASE_COL.exitLight, horrorColors.exitLight, horrorFactor);
   COL.fog = mix(BASE_COL.fog, horrorColors.fog, horrorFactor);
   
-  // Aggiornare glowEffect
   const glowIntensity = 0.12 + horrorFactor * 0.2;
   const glowColor = horrorFactor > 0.5 ? 'rgba(180,20,20,' + glowIntensity + ')' : 'rgba(255,250,200,' + glowIntensity + ')';
   COL.lightGlow = glowColor;
@@ -726,7 +871,7 @@ let player = {
   stamina: 100,
   maxStamina: 100,
   steps: 0,
-  dir: 0,        // 0=down, 1=up, 2=left, 3=right
+  dir: 0,
   frame: 0,
   moving: false,
   sprinting: false
@@ -784,7 +929,6 @@ let level = 0;
 let lightFlicker = 1;
 let animTime = 0;
 
-// resize
 function resize() {
   const area = document.getElementById('game-area');
   if (area) {
@@ -794,16 +938,13 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 
-// maze gen
 function generateMaze() {
-  // Assicura randomizzazione completa ad ogni generazione
   Math.random();
   
   maze = [];
   rooms = [];
   doors = [];
   
-  // Fill with walls
   for (let y = 0; y < MAZE_H; y++) {
     maze[y] = [];
     for (let x = 0; x < MAZE_W; x++) {
@@ -811,24 +952,19 @@ function generateMaze() {
     }
   }
   
-  // Generate many rooms of varying sizes (varianza aumentata per più diversità)
   const numRooms = 40 + Math.floor(Math.random() * 25);
   
   for (let attempt = 0; attempt < numRooms * 3; attempt++) {
-    // Random room size - mix of large, medium, small
     let roomW, roomH;
     const sizeRoll = Math.random();
     
     if (sizeRoll < 0.2) {
-      // Large room
       roomW = 8 + Math.floor(Math.random() * 6);
       roomH = 8 + Math.floor(Math.random() * 6);
     } else if (sizeRoll < 0.5) {
-      // Medium room
       roomW = 5 + Math.floor(Math.random() * 4);
       roomH = 5 + Math.floor(Math.random() * 4);
     } else {
-      // Small room
       roomW = 3 + Math.floor(Math.random() * 3);
       roomH = 3 + Math.floor(Math.random() * 3);
     }
@@ -836,7 +972,6 @@ function generateMaze() {
     const roomX = 2 + Math.floor(Math.random() * (MAZE_W - roomW - 4));
     const roomY = 2 + Math.floor(Math.random() * (MAZE_H - roomH - 4));
     
-    // Check overlap with small margin
     let overlap = false;
     for (const room of rooms) {
       if (roomX < room.x + room.w + 1 && roomX + roomW + 1 > room.x &&
@@ -849,7 +984,6 @@ function generateMaze() {
     if (!overlap && rooms.length < numRooms) {
       rooms.push({ x: roomX, y: roomY, w: roomW, h: roomH });
       
-      // Carve room
       for (let y = roomY; y < roomY + roomH; y++) {
         for (let x = roomX; x < roomX + roomW; x++) {
           if (y > 0 && y < MAZE_H - 1 && x > 0 && x < MAZE_W - 1) {
@@ -860,9 +994,7 @@ function generateMaze() {
     }
   }
   
-  // Connect rooms with corridors of varying width
   for (let i = 0; i < rooms.length; i++) {
-    // Connect to nearest rooms
     const connections = Math.min(3, rooms.length - 1);
     const sorted = [...rooms].filter((_, idx) => idx !== i)
       .sort((a, b) => {
@@ -881,24 +1013,18 @@ function generateMaze() {
         const endX = Math.floor(roomB.x + roomB.w / 2);
         const endY = Math.floor(roomB.y + roomB.h / 2);
         
-        // Random corridor width (1-2, mostly 1 for tighter feel)
         const corridorW = Math.random() < 0.7 ? 1 : 2;
-        
-        // Random path type
         const pathType = Math.random();
         
         if (pathType < 0.4) {
-          // L-shaped: horizontal then vertical
           carveCorridorH(startX, endX, startY, corridorW);
           carveCorridorV(startY, endY, endX, corridorW);
           maybeAddDoor(endX, startY);
         } else if (pathType < 0.8) {
-          // L-shaped: vertical then horizontal
           carveCorridorV(startY, endY, startX, corridorW);
           carveCorridorH(startX, endX, endY, corridorW);
           maybeAddDoor(startX, endY);
         } else {
-          // Zigzag
           const midX = Math.floor((startX + endX) / 2);
           const midY = Math.floor((startY + endY) / 2);
           carveCorridorH(startX, midX, startY, corridorW);
@@ -910,7 +1036,6 @@ function generateMaze() {
     }
   }
   
-  // Add extra long corridors
   for (let i = 0; i < 8; i++) {
     const horizontal = Math.random() < 0.5;
     const corridorW = 1;
@@ -928,10 +1053,8 @@ function generateMaze() {
     }
   }
   
-  // Add doors between rooms
   addDoorsToMaze();
   
-  // Place EXIT or ROBOT based on level
   const exitRoomIdx = Math.floor(Math.random() * Math.max(1, rooms.length - 10));
   const exitRoom = rooms[exitRoomIdx] || rooms[rooms.length - 1];
   
@@ -939,9 +1062,8 @@ function generateMaze() {
   exitPos.y = exitRoom.y + exitRoom.h - 2;
   
   if (level === 1) {
-    // Level 1: Place ROBOT instead of EXIT
     if (maze[exitPos.y] && maze[exitPos.y][exitPos.x] !== undefined) {
-      maze[exitPos.y][exitPos.x] = FLOOR; // No EXIT tile, just floor
+      maze[exitPos.y][exitPos.x] = FLOOR;
     }
     robot.x = exitPos.x + 0.5;
     robot.y = exitPos.y + 0.5;
@@ -951,18 +1073,15 @@ function generateMaze() {
     robot.monologueTimer = 0;
     robot.monologueDone = false;
     
-    // Push monster far off-map
     monster.x = -100;
     monster.y = -100;
   } else {
-    // Level 0: Normal EXIT
     if (maze[exitPos.y] && maze[exitPos.y][exitPos.x] !== undefined) {
       maze[exitPos.y][exitPos.x] = EXIT;
     }
     robot.active = false;
   }
   
-  // Place player far from exit/robot
   const MIN_DIST = 6000 / TILE;
   let validPlayerRoom = null;
   
@@ -1004,7 +1123,6 @@ function generateMaze() {
     player.y = 3;
   }
   
-  // Place monster (only for level 0)
   if (level !== 1) {
     let monsterRoom = null;
     let monsterDist = 0;
@@ -1338,7 +1456,6 @@ function addChat(text, danger, isRobot = false) {
 }
 
 function updateChat(dt) {
-  // Robot monologue takes priority
   if (level === 1 && robot.monologueStarted && !robot.monologueDone) return;
   
   chatTimer += dt;
@@ -1363,7 +1480,6 @@ function updateChat(dt) {
   }
   
   if (level === 1) {
-    // Robot messages
     if (rDist < 15 && !robot.monologueStarted) {
       interval = 5000;
       messages = CHAT_ROBOT;
@@ -1398,7 +1514,6 @@ function update(dt) {
   gameTime += dt;
   animTime += dt;
   
-  // Light flicker
   const flickerChance = 0.008 + (level / 8) * 0.015;
   const flickerMin = 0.6 - (level / 8) * 0.3;
   const flickerMax = 0.3 + (level / 8) * 0.5;
@@ -1408,7 +1523,6 @@ function update(dt) {
     setTimeout(() => { lightFlicker = 1; }, 80 + Math.random() * 150);
   }
   
-  // === PLAYER INPUT ===
   let dx = 0, dy = 0;
   
   if (keys['w'] || keys['arrowup']) { dy = -1; player.dir = 1; }
@@ -1466,7 +1580,6 @@ function update(dt) {
   
   player.sanity = Math.min(100, player.sanity + 0.02);
   
-  // === MONSTER AI (disabled on level 1) ===
   if (level !== 1) {
     pathTimer += dt;
     
@@ -1512,7 +1625,6 @@ function update(dt) {
     }
   }
   
-  // === ROBOT LOGIC (level 1) ===
   if (robot.active) {
     robot.eyeBlink = Math.sin(gameTime / 500) * 0.5 + 0.5;
     robot.armWobble = Math.sin(gameTime / 800) * 2;
@@ -1539,7 +1651,6 @@ function update(dt) {
         
         if (robot.monologueIdx >= ROBOT_MONOLOGUE.length) {
           robot.monologueDone = true;
-          // Trigger final screen after delay
           setTimeout(() => {
             showFinalScreen();
           }, 2500);
@@ -1548,7 +1659,6 @@ function update(dt) {
     }
   }
   
-  // Level 0: Check EXIT
   if (level !== 1) {
     const tx = Math.floor(player.x);
     const ty = Math.floor(player.y);
@@ -1558,7 +1668,6 @@ function update(dt) {
     }
   }
   
-  // === UPDATE UI ===
   document.getElementById('sanity-fill').style.width = Math.max(0, player.sanity) + '%';
   document.getElementById('sanity-fill').style.background = 
     player.sanity < 30 ? '#8a5a4a' : player.sanity < 60 ? '#8a8a50' : '#6a8a5a';
@@ -1612,7 +1721,6 @@ function render() {
   const endX = Math.ceil(camX + W / TILE) + 1;
   const endY = Math.ceil(camY + H / TILE) + 1;
   
-  // === DRAW TILES ===
   for (let y = startY; y < endY; y++) {
     for (let x = startX; x < endX; x++) {
       if (y < 0 || y >= MAZE_H || x < 0 || x >= MAZE_W) continue;
@@ -1720,7 +1828,6 @@ function render() {
   
   ctx.globalAlpha = 1;
   
-  // === DRAW MONSTER (not on level 1) ===
   if (level !== 1) {
     const mDist = getMonsterDist();
     const showM = monster.visible || (gameTime - monster.lastSeen < 400);
@@ -1761,7 +1868,6 @@ function render() {
     }
   }
   
-  // === DRAW ROBOT (level 1) ===
   if (robot.active) {
     const robotScreenX = (robot.x - camX) * TILE;
     const robotScreenY = (robot.y - camY) * TILE;
@@ -1782,13 +1888,11 @@ function render() {
     }
   }
   
-  // === DRAW PLAYER ===
   const px = (player.x - camX) * TILE;
   const py = (player.y - camY) * TILE;
   
   drawPlayer(px, py);
   
-  // === EFFECTS ===
   const vignetteIntensity = 0.65 + (level / 8) * 0.2;
   const grad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.min(W, H) * vignetteIntensity);
   grad.addColorStop(0, 'rgba(0,0,0,0)');
@@ -1822,7 +1926,6 @@ function drawRobot(rx, ry) {
   const wobble = robot.armWobble;
   const eyeGlow = robot.eyeBlink;
   
-  // Colors
   const metalDark = '#3a3a3a';
   const metal = '#5a5a5a';
   const metalLight = '#7a7a7a';
@@ -1832,18 +1935,15 @@ function drawRobot(rx, ry) {
   const eyeColor = `rgba(100, 180, 220, ${0.5 + eyeGlow * 0.5})`;
   const eyeGlowColor = `rgba(100, 200, 255, ${eyeGlow * 0.6})`;
   
-  // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.4)';
   ctx.beginPath();
   ctx.ellipse(rx, ry + 18, 12, 5, 0, 0, Math.PI * 2);
   ctx.fill();
   
-  // === LEGS (tank treads style) ===
   ctx.fillStyle = metalDark;
   ctx.fillRect(rx - 10, ry + 5, 8, 14);
   ctx.fillRect(rx + 2, ry + 5, 8, 14);
   
-  // Tread details
   ctx.fillStyle = rust2;
   ctx.fillRect(rx - 9, ry + 7, 6, 2);
   ctx.fillRect(rx - 9, ry + 11, 6, 2);
@@ -1852,11 +1952,9 @@ function drawRobot(rx, ry) {
   ctx.fillRect(rx + 3, ry + 11, 6, 2);
   ctx.fillRect(rx + 3, ry + 15, 6, 2);
   
-  // === BODY (boxy, industrial) ===
   ctx.fillStyle = metal;
   ctx.fillRect(rx - 12, ry - 18, 24, 25);
   
-  // Rust patches on body
   ctx.fillStyle = rust1;
   ctx.fillRect(rx - 10, ry - 5, 5, 4);
   ctx.fillRect(rx + 6, ry - 15, 4, 6);
@@ -1866,7 +1964,6 @@ function drawRobot(rx, ry) {
   ctx.fillStyle = rust3;
   ctx.fillRect(rx - 11, ry + 2, 4, 3);
   
-  // Panel lines
   ctx.strokeStyle = metalDark;
   ctx.lineWidth = 1;
   ctx.strokeRect(rx - 10, ry - 16, 20, 21);
@@ -1875,73 +1972,59 @@ function drawRobot(rx, ry) {
   ctx.lineTo(rx, ry + 5);
   ctx.stroke();
   
-  // Chest light (dim, flickering)
   const chestGlow = Math.sin(gameTime / 300) * 0.3 + 0.5;
   ctx.fillStyle = `rgba(255, 100, 50, ${chestGlow * 0.6})`;
   ctx.fillRect(rx - 3, ry - 8, 6, 4);
   ctx.fillStyle = `rgba(255, 150, 100, ${chestGlow})`;
   ctx.fillRect(rx - 2, ry - 7, 4, 2);
   
-  // === ARMS (mechanical, jointed) ===
   ctx.fillStyle = metal;
-  // Left arm
   ctx.fillRect(rx - 18 + wobble, ry - 14, 6, 16);
   ctx.fillStyle = metalDark;
   ctx.fillRect(rx - 17 + wobble, ry - 6, 4, 3);
-  // Rust on arm
   ctx.fillStyle = rust1;
   ctx.fillRect(rx - 17 + wobble, ry - 12, 3, 4);
   
-  // Right arm
   ctx.fillStyle = metal;
   ctx.fillRect(rx + 12 - wobble, ry - 14, 6, 16);
   ctx.fillStyle = metalDark;
   ctx.fillRect(rx + 13 - wobble, ry - 6, 4, 3);
-  // Rust on arm
   ctx.fillStyle = rust2;
   ctx.fillRect(rx + 14 - wobble, ry - 10, 3, 5);
   
-  // Claws/hands
   ctx.fillStyle = metalDark;
   ctx.fillRect(rx - 19 + wobble, ry, 8, 4);
   ctx.fillRect(rx + 11 - wobble, ry, 8, 4);
-  // Fingers
   ctx.fillStyle = metalLight;
   ctx.fillRect(rx - 19 + wobble, ry + 3, 2, 3);
   ctx.fillRect(rx - 15 + wobble, ry + 3, 2, 3);
   ctx.fillRect(rx + 17 - wobble, ry + 3, 2, 3);
   ctx.fillRect(rx + 13 - wobble, ry + 3, 2, 3);
   
-  // === HEAD (boxy with antenna) ===
   ctx.fillStyle = metal;
   ctx.fillRect(rx - 9, ry - 32, 18, 15);
   
-  // Rust on head
   ctx.fillStyle = rust1;
   ctx.fillRect(rx - 7, ry - 30, 4, 3);
   ctx.fillRect(rx + 5, ry - 25, 3, 5);
   ctx.fillStyle = rust3;
   ctx.fillRect(rx - 8, ry - 20, 5, 2);
   
-  // Face plate
   ctx.fillStyle = metalDark;
   ctx.fillRect(rx - 7, ry - 28, 14, 9);
   
-  // Eyes (glowing)
   ctx.shadowBlur = 8;
   ctx.shadowColor = eyeGlowColor;
   ctx.fillStyle = eyeColor;
   ctx.fillRect(rx - 5, ry - 26, 4, 4);
   ctx.fillRect(rx + 1, ry - 26, 4, 4);
   
-  // One eye flickering/damaged
   if (Math.sin(gameTime / 200) > 0.7) {
     ctx.fillStyle = 'rgba(50,50,50,0.8)';
     ctx.fillRect(rx + 1, ry - 26, 4, 4);
   }
   ctx.shadowBlur = 0;
   
-  // Mouth (speaker grille)
   ctx.fillStyle = metalDark;
   ctx.fillRect(rx - 4, ry - 21, 8, 3);
   ctx.fillStyle = '#2a2a2a';
@@ -1949,10 +2032,8 @@ function drawRobot(rx, ry) {
     ctx.fillRect(rx - 3 + i * 2, ry - 20, 1, 1);
   }
   
-  // Antenna
   ctx.fillStyle = metalDark;
   ctx.fillRect(rx + 4, ry - 40, 2, 10);
-  // Antenna light (blinking)
   const antennaGlow = Math.sin(gameTime / 400) > 0 ? 1 : 0.3;
   ctx.fillStyle = `rgba(255, 50, 50, ${antennaGlow})`;
   ctx.shadowBlur = antennaGlow * 6;
@@ -1962,14 +2043,12 @@ function drawRobot(rx, ry) {
   ctx.fill();
   ctx.shadowBlur = 0;
   
-  // Screws/bolts
   ctx.fillStyle = metalLight;
   ctx.fillRect(rx - 8, ry - 31, 2, 2);
   ctx.fillRect(rx + 6, ry - 31, 2, 2);
   ctx.fillRect(rx - 11, ry - 17, 2, 2);
   ctx.fillRect(rx + 9, ry - 17, 2, 2);
   
-  // Name indicator
   if (getRobotDist() < 8) {
     ctx.fillStyle = 'rgba(100,180,220,0.7)';
     ctx.font = '8px Courier New';
@@ -1993,7 +2072,6 @@ function drawPlayer(px, py) {
   const shirt = '#4a6080';
   const shirtDark = '#3a4a60';
   const pants = '#3a3a4a';
-  const pantsDark = '#2a2a3a';
   const shoes = '#2a2020';
   
   ctx.fillStyle = 'rgba(0,0,0,0.35)';
@@ -2101,14 +2179,12 @@ function updateDistanceDisplay() {
   const display = document.getElementById('distance-display');
   
   if (level === 1) {
-    // Show distance to robot
     const robotDist = getRobotDist();
     const distanceInMeters = Math.round(robotDist * TILE);
     display.innerHTML = `<div style="font-size:14px;color:#6aaaaa;letter-spacing:3px;">SEGNALE</div><div style="font-size:48px;color:#5aaaaa;font-weight:bold;text-shadow:0 0 15px rgba(100,170,170,0.8);">${distanceInMeters}</div><div style="font-size:14px;color:#6aaaaa;">METRI</div>`;
     display.style.borderColor = '#5a9aaa';
     display.style.boxShadow = '0 0 20px rgba(90,154,170,0.3), inset 0 0 10px rgba(90,154,170,0.1)';
   } else {
-    // Show distance to exit
     const exitDist = getExitDist();
     const distanceInMeters = Math.round(exitDist * TILE);
     display.innerHTML = `<div style="font-size:14px;color:#7aba8a;letter-spacing:3px;">USCITA</div><div style="font-size:48px;color:#5aba6a;font-weight:bold;text-shadow:0 0 15px rgba(90,170,106,0.8);">${distanceInMeters}</div><div style="font-size:14px;color:#7aba8a;">METRI</div>`;
@@ -2140,9 +2216,6 @@ function gameLoop(timestamp) {
 // GAME FLOW
 // ═══════════════════════════════════════════════════════════════════
 function startGame() {
-  const timeSeed = Date.now();
-  Math.random = Math.random.bind(Math);
-  
   document.getElementById('intro-screen').classList.add('hidden');
   document.getElementById('gameover-screen').classList.add('hidden');
   document.getElementById('win-screen').classList.add('hidden');
@@ -2222,7 +2295,6 @@ function win() {
   const min = Math.floor(time / 60);
   const sec = time % 60;
   
-  // Level 0 complete — go to level 1
   const texts = [
     "La porta si apre. Ma dall'altra parte... altri corridoi. Più profondi. Più bui.",
     "Sei uscito dal primo livello. Ma la discesa non è finita.",
