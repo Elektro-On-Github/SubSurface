@@ -32,61 +32,11 @@ html,body{height:100%;overflow:hidden;background:#000}
   height:100%;
 }
 
-#hud{
-  position:absolute;
-  top:15px;
-  left:15px;
-  z-index:10;
-  color:#8a8060;
-  font-size:11px;
-  text-shadow:0 0 10px rgba(0,0,0,.8);
-  display:none;
-}
-
-#level-display{
-  font-size:14px;
-  color:#a09070;
-  margin-bottom:10px;
-  letter-spacing:3px;
-}
-
 #stats-win {
   color:#5a7a5a;
   font-size:16px;
   margin-top:10px;
   line-height:1.6;
-}
-
-.bar-container{
-  margin-bottom:8px;
-}
-
-.bar-label{
-  font-size:9px;
-  color:#6a6850;
-  margin-bottom:3px;
-  letter-spacing:1px;
-}
-
-.bar{
-  width:120px;
-  height:6px;
-  background:#2a2820;
-  border:1px solid #4a4830;
-}
-
-#sanity-fill{
-  height:100%;
-  background:#8a8a50;
-  width:100%;
-  transition:width .2s;
-}
-
-#stamina-fill{
-  height:100%;
-  background:#5080a0;
-  width:100%;
-  transition:width .1s;
 }
 
 #controls-hint{
@@ -117,25 +67,6 @@ html,body{height:100%;overflow:hidden;background:#000}
 }
 
 #monster-alert.visible{opacity:1}
-
-#distance-display{
-  display: none; /* hide it, idk if use it or no */
-  position:fixed;
-  top:15px;
-  right:15px;
-  color:#4aba5a;
-  font-size:16px;
-  z-index:10;
-  letter-spacing:2px;
-  padding:20px 25px;
-  background:rgba(10,8,5,0.95);
-  border:3px solid #5a9a6a;
-  text-align:center;
-  line-height:1.5;
-  box-shadow:0 0 20px rgba(90,154,106,0.3), inset 0 0 10px rgba(90,154,106,0.1);
-  font-weight:bold;
-  z-index: 10;
-}
 
 #sprint-indicator{
   position:absolute;
@@ -361,21 +292,8 @@ html,body{height:100%;overflow:hidden;background:#000}
 <div id="game-wrapper">
   <div id="game-area">
     <canvas id="canvas"></canvas>
-    <div id="distance-display"></div>
     <div id="sanity-display"></div>
     <div id="stamina-display"></div>
-    
-    <div id="hud">
-      <div id="level-display">LEVEL 0</div>
-      <div class="bar-container">
-        <div class="bar-label">SANITÀ</div>
-        <div class="bar"><div id="sanity-fill"></div></div>
-      </div>
-      <div class="bar-container">
-        <div class="bar-label">STAMINA</div>
-        <div class="bar"><div id="stamina-fill"></div></div>
-      </div>
-    </div>
     
     <div id="controls-hint">
       WASD: cammina | SHIFT: sprint<br>
@@ -778,8 +696,8 @@ const DOOR = 2;
 const EXIT = 3;
 const DOOR_OPEN = 4;
 
-// colors (baseline)
-const BASE_COL = {
+// colors
+const COL = {
   floor: '#b8a845',
   floorDark: '#a09035',
   floorPattern: '#a89838',
@@ -797,71 +715,6 @@ const BASE_COL = {
   exitLight: '#4aba5a',
   fog: '#1a1810'
 };
-
-const COL = { ...BASE_COL }; // copy of colors for editing after
-
-function updateHorrorLevel() {
-  const horrorFactor = Math.min(1, level / 8);
-  
-  const mix = (baseColor, horrorColor, factor) => {
-    const base = parseInt(baseColor.slice(1), 16);
-    const horror = parseInt(horrorColor.slice(1), 16);
-    
-    const baseR = (base >> 16) & 255;
-    const baseG = (base >> 8) & 255;
-    const baseB = base & 255;
-    
-    const horrorR = (horror >> 16) & 255;
-    const horrorG = (horror >> 8) & 255;
-    const horrorB = horror & 255;
-    
-    const r = Math.round(baseR + (horrorR - baseR) * factor);
-    const g = Math.round(baseG + (horrorG - baseG) * factor);
-    const b = Math.round(baseB + (horrorB - baseB) * factor);
-    
-    return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
-  };
-  
-  const horrorColors = {
-    floor: '#3a1010',
-    floorDark: '#2a0a0a',
-    floorPattern: '#5a2020',
-    wall: '#4a0a0a',
-    wallDark: '#2a0505',
-    wallTop: '#6a1515',
-    wallLine: '#8a3030',
-    light: '#8a2020',
-    lightGlow: 'rgba(180,20,20,0.12)',
-    door: '#1a0a0a',
-    doorFrame: '#0a0505',
-    doorHandle: '#4a1515',
-    exit: '#6a0000',
-    exitGlow: 'rgba(150,0,0,0.4)',
-    exitLight: '#aa4040',
-    fog: '#0a0505'
-  };
-  
-  // color change mixing
-  COL.floor = mix(BASE_COL.floor, horrorColors.floor, horrorFactor);
-  COL.floorDark = mix(BASE_COL.floorDark, horrorColors.floorDark, horrorFactor);
-  COL.floorPattern = mix(BASE_COL.floorPattern, horrorColors.floorPattern, horrorFactor);
-  COL.wall = mix(BASE_COL.wall, horrorColors.wall, horrorFactor);
-  COL.wallDark = mix(BASE_COL.wallDark, horrorColors.wallDark, horrorFactor);
-  COL.wallTop = mix(BASE_COL.wallTop, horrorColors.wallTop, horrorFactor);
-  COL.wallLine = mix(BASE_COL.wallLine, horrorColors.wallLine, horrorFactor);
-  COL.light = mix(BASE_COL.light, horrorColors.light, horrorFactor);
-  COL.door = mix(BASE_COL.door, horrorColors.door, horrorFactor);
-  COL.doorFrame = mix(BASE_COL.doorFrame, horrorColors.doorFrame, horrorFactor);
-  COL.doorHandle = mix(BASE_COL.doorHandle, horrorColors.doorHandle, horrorFactor);
-  COL.exit = mix(BASE_COL.exit, horrorColors.exit, horrorFactor);
-  COL.exitLight = mix(BASE_COL.exitLight, horrorColors.exitLight, horrorFactor);
-  COL.fog = mix(BASE_COL.fog, horrorColors.fog, horrorFactor);
-  
-  const glowIntensity = 0.12 + horrorFactor * 0.2;
-  const glowColor = horrorFactor > 0.5 ? 'rgba(180,20,20,' + glowIntensity + ')' : 'rgba(255,250,200,' + glowIntensity + ')';
-  COL.lightGlow = glowColor;
-  COL.exitGlow = 'rgba(' + (50 + horrorFactor * 100) + ',' + (150 - horrorFactor * 100) + ',' + (70 - horrorFactor * 70) + ',0.4)';
-}
 
 // game state
 let maze = [];
@@ -942,8 +795,6 @@ function resize() {
 window.addEventListener('resize', resize);
 
 function generateMaze() {
-  Math.random();
-  
   maze = [];
   rooms = [];
   doors = [];
@@ -1471,17 +1322,6 @@ function updateChat(dt) {
   let messages = CHAT_CALM;
   let danger = false;
   
-  if (level >= 6) {
-    messages = CHAT_CALM.concat([
-      "Le pareti sanguinano...",
-      "Non è più un corridoio. È un corpo.",
-      "Puoi sentire il suo cuore? È il tuo.",
-      "Le porte non portano da nessuna parte. Solo più giù.",
-      "Non cammini più. Affonda.",
-      "Il buio ha un suono. Un respiro."
-    ]);
-  }
-  
   if (level === 1) {
     if (rDist < 15 && !robot.monologueStarted) {
       interval = 5000;
@@ -1517,12 +1357,8 @@ function update(dt) {
   gameTime += dt;
   animTime += dt;
   
-  const flickerChance = 0.008 + (level / 8) * 0.015;
-  const flickerMin = 0.6 - (level / 8) * 0.3;
-  const flickerMax = 0.3 + (level / 8) * 0.5;
-  
-  if (Math.random() < flickerChance) {
-    lightFlicker = flickerMin + Math.random() * flickerMax;
+  if (Math.random() < 0.008) {
+    lightFlicker = 0.6 + Math.random() * 0.3;
     setTimeout(() => { lightFlicker = 1; }, 80 + Math.random() * 150);
   }
   
@@ -1590,7 +1426,7 @@ function update(dt) {
     const dx = player.x - monster.x;
     const dy = player.y - monster.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    const CHASE_DISTANCE = VIEW_DIST + 5; // 500 mt convertiti in tile
+    const CHASE_DISTANCE = VIEW_DIST + 5;
     
     // Calcola il percorso SOLO se il player è entro 500 mt
     if (pathTimer > 350) {
@@ -1613,9 +1449,8 @@ function update(dt) {
         if (dist < 0.09) {
           monster.pathIdx++;
         } else if (dist > 0) {
-          const baseSpeed = 0.09 + (level * 0.008);
           const timeBonus = (gameTime / 60000) * 0.012;
-          const mSpeed = baseSpeed + timeBonus;
+          const mSpeed = 0.09 + timeBonus;
           
           monster.x += (mdx / dist) * mSpeed;
           monster.y += (mdy / dist) * mSpeed;
@@ -1682,14 +1517,6 @@ function update(dt) {
     }
   }
   
-  document.getElementById('sanity-fill').style.width = Math.max(0, player.sanity) + '%';
-  document.getElementById('sanity-fill').style.background = 
-    player.sanity < 30 ? '#8a5a4a' : player.sanity < 60 ? '#8a8a50' : '#6a8a5a';
-  
-  document.getElementById('stamina-fill').style.width = Math.max(0, player.stamina) + '%';
-  document.getElementById('stamina-fill').style.background = 
-    player.stamina < 25 ? '#8a5050' : '#5080a0';
-  
   const sanityColor = player.sanity < 30 ? '#8a5a4a' : player.sanity < 60 ? '#8a8a50' : '#6a8a5a';
   const staminaColor = player.stamina < 25 ? '#8a5050' : '#5080a0';
   
@@ -1722,8 +1549,6 @@ function render() {
   const H = canvas.height;
   if (W === 0 || H === 0) return;
   
-  updateHorrorLevel();
-  
   ctx.fillStyle = COL.fog;
   ctx.fillRect(0, 0, W, H);
   
@@ -1748,8 +1573,7 @@ function render() {
       const dist = Math.sqrt(dx * dx + dy * dy);
       
       const visible = hasLOS(player.x, player.y, x + 0.5, y + 0.5);
-      const viewDistance = VIEW_DIST - (level / 8) * 3;
-      let brightness = visible ? Math.max(0, 1 - dist / viewDistance) : 0;
+      let brightness = visible ? Math.max(0, 1 - dist / VIEW_DIST) : 0;
       brightness *= lightFlicker;
       
       if (brightness <= 0) continue;
@@ -1843,7 +1667,6 @@ function render() {
   ctx.globalAlpha = 1;
   
   if (level !== 1) {
-    const mDist = getMonsterDist();
     const showM = monster.visible || (gameTime - monster.lastSeen < 400);
     
     if (showM) {
@@ -1907,30 +1730,21 @@ function render() {
   
   drawPlayer(px, py);
   
-  const vignetteIntensity = 0.65 + (level / 8) * 0.2;
-  const grad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.min(W, H) * vignetteIntensity);
+  const grad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.min(W, H) * 0.65);
   grad.addColorStop(0, 'rgba(0,0,0,0)');
-  grad.addColorStop(0.5, 'rgba(0,0,0,' + (0.15 + level * 0.05) + ')');
-  grad.addColorStop(1, 'rgba(26,24,16,' + (0.92 + level * 0.008) + ')');
+  grad.addColorStop(0.5, 'rgba(0,0,0,0.15)');
+  grad.addColorStop(1, 'rgba(26,24,16,0.92)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
   
   if (player.sanity < 35) {
-    const sanityAlpha = (35 - player.sanity) / 60 + (level / 8) * 0.3;
+    const sanityAlpha = (35 - player.sanity) / 60;
     ctx.fillStyle = `rgba(30, 15, 10, ${Math.min(1, sanityAlpha)})`;
-    ctx.fillRect(0, 0, W, H);
-  }
-  
-  if (level >= 3) {
-    const horrorAlpha = (level - 3) / 5 * 0.35;
-    ctx.fillStyle = `rgba(150, 0, 0, ${horrorAlpha})`;
     ctx.fillRect(0, 0, W, H);
   }
   
   ctx.fillStyle = 'rgba(255, 250, 200, 0.015)';
   ctx.fillRect(0, 0, W, H);
-  
-  updateDistanceDisplay();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2187,27 +2001,6 @@ function drawPlayer(px, py) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// DISTANCE DISPLAY
-// ═══════════════════════════════════════════════════════════════════
-function updateDistanceDisplay() {
-  const display = document.getElementById('distance-display');
-  
-  if (level === 1) {
-    const robotDist = getRobotDist();
-    const distanceInMeters = Math.round(robotDist * TILE);
-    display.innerHTML = `<div style="font-size:14px;color:#6aaaaa;letter-spacing:3px;">SEGNALE</div><div style="font-size:48px;color:#5aaaaa;font-weight:bold;text-shadow:0 0 15px rgba(100,170,170,0.8);">${distanceInMeters}</div><div style="font-size:14px;color:#6aaaaa;">METRI</div>`;
-    display.style.borderColor = '#5a9aaa';
-    display.style.boxShadow = '0 0 20px rgba(90,154,170,0.3), inset 0 0 10px rgba(90,154,170,0.1)';
-  } else {
-    const exitDist = getExitDist();
-    const distanceInMeters = Math.round(exitDist * TILE);
-    display.innerHTML = `<div style="font-size:14px;color:#7aba8a;letter-spacing:3px;">USCITA</div><div style="font-size:48px;color:#5aba6a;font-weight:bold;text-shadow:0 0 15px rgba(90,170,106,0.8);">${distanceInMeters}</div><div style="font-size:14px;color:#7aba8a;">METRI</div>`;
-    display.style.borderColor = '#5a9a6a';
-    display.style.boxShadow = '0 0 20px rgba(90,154,106,0.3), inset 0 0 10px rgba(90,154,106,0.1)';
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
 // GAME LOOP
 // ═══════════════════════════════════════════════════════════════════
 let lastTime = 0;
@@ -2235,8 +2028,6 @@ function startGame() {
   document.getElementById('win-screen').classList.add('hidden');
   document.getElementById('finalwin-screen').classList.add('hidden');
   
-  updateHorrorLevel();
-  
   resize();
   generateMaze();
   
@@ -2262,7 +2053,6 @@ function startGame() {
   animTime = 0;
   gameRunning = true;
   
-  document.getElementById('level-display').textContent = 'LEVEL ' + level;
   document.getElementById('chat-messages').innerHTML = '';
   
   if (level === 1) {
